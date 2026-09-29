@@ -164,18 +164,24 @@
 
         <div class="row g-3 mt-1">
           <div class="col-md-6">
-            <label class="form-label fw-bold">Adjuntar informe de inicio <small class="text-muted">(PDF, JPG o PNG - máx. 2 MB)</small></label>
+            <label class="form-label fw-bold">Adjuntar informe de inicio <small class="text-muted">(PDF, JPG o PNG - máx. 10 MB)</small></label>
             <input type="file" id="adjuntoInicio" class="form-control" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
             <div id="infoAdjInicio" class="adjunto-info d-none"></div>
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-bold">Adjuntar informe de cierre <small class="text-muted">(PDF, JPG o PNG - máx. 2 MB)</small></label>
+            <label class="form-label fw-bold">Adjuntar informe de cierre <small class="text-muted">(PDF, JPG o PNG - máx. 10 MB)</small></label>
             <input type="file" id="adjuntoFin" class="form-control" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
             <div id="infoAdjFin" class="adjunto-info d-none"></div>
           </div>
         </div>
 
-        <div class="mt-4 text-end">
+        <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="form-check form-switch switch-cal mb-0">
+            <input class="form-check-input" type="checkbox" id="enviarCalendario" checked>
+            <label class="form-check-label fw-semibold" for="enviarCalendario">
+              <i class="fa-brands fa-google me-1"></i>Sincronizar con Google Calendar
+            </label>
+          </div>
           <button type="submit" id="btnGuardar" class="btn btn-success btn-custom">
             <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Registro
           </button>
@@ -232,7 +238,6 @@
         <table class="table table-hover align-middle table-sm">
           <thead class="table-dark">
             <tr>
-              <th>ID</th>
               <th>Estado</th>
               <th>Tipo</th>
               <th>Personal</th>
@@ -250,7 +255,7 @@
             </tr>
           </thead>
           <tbody id="tablaResultados">
-            <tr><td colspan="15" class="text-center text-muted texto-vacio"><span class="spinner-border spinner-border-sm me-2"></span>Cargando datos...</td></tr>
+            <tr><td colspan="14" class="text-center text-muted texto-vacio"><span class="spinner-border spinner-border-sm me-2"></span>Cargando datos...</td></tr>
           </tbody>
         </table>
       </div>
