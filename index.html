@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Control de Comisiones - Viajes al Exterior</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="estilo.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+<div class="container-fluid px-3 px-md-4">
+  <div class="text-center mb-4">
+    <h2 class="header-title"><i class="fa-solid fa-plane-departure me-2"></i>Control de Comisiones y Viajes</h2>
+    <p class="subtitulo mb-2">Registro y consulta de comisiones - Modelo de viaje</p>
+    <span id="estadoApi" class="badge bg-secondary"><i class="fa-solid fa-satellite-dish me-1"></i> Verificando API...</span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-4" id="kpis">
+    <div class="col-6 col-md-4 col-lg">>
+      <button type="button" class="kpi kpi-total" data-kpi="total" onclick="aplicarKpi('total')">
+        <span class="kpi-icono"><i class="fa-solid fa-layer-group"></i></span>
+        <span class="kpi-datos">
+          <span class="kpi-valor" id="kpiTotal">0</span>
+          <span class="kpi-texto">Total comisiones</span>
+        </span>
+      </button>
+    </div>
+    <div class="col-6 col-md-4 col-lg">
+      <button type="button" class="kpi kpi-encurso" data-kpi="encurso" onclick="aplicarKpi('encurso')">
+        <span class="kpi-icono"><i class="fa-solid fa-plane-departure"></i></span>
+        <span class="kpi-datos">
+          <span class="kpi-valor" id="kpiEnCurso">0</span>
+          <span class="kpi-texto">En curso</span>
+        </span>
+      </button>
+    </div>
+    <div class="col-6 col-md-4 col-lg">
+      <button type="button" class="kpi kpi-canceladas" data-kpi="canceladas" onclick="aplicarKpi('canceladas')">
+        <span class="kpi-icono"><i class="fa-solid fa-ban"></i></span>
+        <span class="kpi-datos">
+          <span class="kpi-valor" id="kpiCanceladas">0</span>
+          <span class="kpi-texto">Canceladas</span>
+        </span>
+      </button>
+    </div>
+    <div class="col-6 col-md-4 col-lg">>
+      <button type="button" class="kpi kpi-nacionales" data-kpi="nacionales" onclick="aplicarKpi('nacionales')">
+        <span class="kpi-icono kpi-icono-bandera"><svg viewBox="0 0 30 21" width="30" height="21" aria-label="Argentina" role="img"><rect width="30" height="7" y="0" fill="#74ACDF"/><rect width="30" height="7" y="7" fill="#ffffff"/><rect width="30" height="7" y="14" fill="#74ACDF"/><g stroke="#a86a00" stroke-width="0.5"><line x1="17.9" y1="10.5" x2="19.3" y2="10.5"/><line x1="17.7" y1="11.6" x2="19" y2="12.1"/><line x1="17.1" y1="12.6" x2="18" y2="13.5"/><line x1="16.1" y1="13.2" x2="16.6" y2="14.5"/><line x1="15" y1="13.4" x2="15" y2="14.8"/><line x1="13.9" y1="13.2" x2="13.4" y2="14.5"/><line x1="13" y1="12.6" x2="12" y2="13.5"/><line x1="12.3" y1="11.6" x2="11" y2="12.1"/><line x1="12.1" y1="10.5" x2="10.7" y2="10.5"/><line x1="12.3" y1="9.4" x2="11" y2="8.9"/><line x1="13" y1="8.5" x2="12" y2="7.5"/><line x1="13.9" y1="7.8" x2="13.4" y2="6.5"/><line x1="15" y1="7.6" x2="15" y2="6.2"/><line x1="16.1" y1="7.8" x2="16.6" y2="6.5"/><line x1="17.1" y1="8.5" x2="18" y2="7.5"/><line x1="17.7" y1="9.4" x2="19" y2="8.9"/></g><circle cx="15" cy="10.5" r="2.2" fill="#f6b40e" stroke="#a86a00" stroke-width="0.4"/></svg></span>
+        <span class="kpi-datos">
+          <span class="kpi-valor" id="kpiNacionales">0</span>
+          <span class="kpi-texto">Nacionales</span>
+        </span>
+      </button>
+    </div>
+    <div class="col-6 col-md-4 col-lg">>
+      <button type="button" class="kpi kpi-internacionales" data-kpi="internacionales" onclick="aplicarKpi('internacionales')">
+        <span class="kpi-icono"><i class="fa-solid fa-earth-americas"></i></span>
+        <span class="kpi-datos">
+          <span class="kpi-valor" id="kpiInternacionales">0</span>
+          <span class="kpi-texto">Internacionales</span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- REGISTRO / EDICION -->
+  <div class="card card-custom d-none" id="panelCarga">
+    <div class="card-header card-header-registro d-flex justify-content-between align-items-center">
+      <span id="tituloFormulario"><i class="fa-solid fa-plus-circle me-2"></i> Nueva Comisión / Viaje</span>
+      <div class="d-flex gap-2">
+        <button type="button" id="btnCancelarEdicion" class="btn btn-sm btn-light text-dark d-none" onclick="cancelarEdicion()">
+          <i class="fa-solid fa-xmark me-1"></i> Cancelar Edición
+        </button>
+        <button type="button" id="btnCerrarPanel" class="btn btn-sm btn-cerrar-panel" onclick="cerrarPanel()" title="Cerrar panel">
+          <i class="fa-solid fa-chevron-up"></i>
+        </button>
+      </div>
+    </div>
+    <div class="card-body p-4">
+      <form id="formRegistro">
+        <input type="hidden" id="registroId">
+
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Fecha de Inicio</label>
+            <input type="date" id="fechaInicio" class="form-control" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Fecha de Fin</label>
+            <input type="date" id="fechaFin" class="form-control" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Cantidad de días</label>
+            <input type="number" id="cantidadDias" class="form-control" min="0" placeholder="Auto">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Tipo de Comisión</label>
+            <select id="tipo" class="form-select" required>
+              <option value="Internacional">Internacional / Exterior</option>
+              <option value="Nacional">Nacional</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Estado de la Comisión</label>
+            <select id="estado" class="form-select" required>
+              <option value="Planificada">Planificada</option>
+              <option value="En curso">En curso</option>
+              <option value="Finalizada">Finalizada</option>
+              <option value="Cancelada">Cancelada</option>
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Jerarquía</label>
+            <input type="text" id="jerarquia" class="form-control" placeholder="Ej: PG">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">DNI</label>
+            <input type="text" id="dni" class="form-control" placeholder="Ej: 31XXXXXX">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Apellido</label>
+            <input type="text" id="apellido" class="form-control" placeholder="Apellido" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Nombre</label>
+            <input type="text" id="nombre" class="form-control" placeholder="Nombre" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Nombre Comisión</label>
+            <input type="text" id="nombreComision" class="form-control" placeholder="Ej: Galapex">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Motivo / Actividad</label>
+            <input type="text" id="motivo" class="form-control" placeholder="Ej: Pesca no reglamentada INNDR" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">País</label>
+            <input type="text" id="pais" class="form-control" placeholder="Ej: Ecuador" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Ciudad</label>
+            <input type="text" id="ciudad" class="form-control" placeholder="Ej: Quito" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">N° Expediente / Informe</label>
+            <input type="text" id="expediente" class="form-control" placeholder="Ej: IF-2026-...">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Gastos a Cargo PNA</label>
+            <select id="gastosPna" class="form-select">
+              <option value="NO">NO</option>
+              <option value="SI">SI</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Adjuntar informe de inicio <small class="text-muted">(PDF, JPG o PNG - máx. 2 MB)</small></label>
+            <input type="file" id="adjuntoInicio" class="form-control" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+            <div id="infoAdjInicio" class="adjunto-info d-none"></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Adjuntar informe de cierre <small class="text-muted">(PDF, JPG o PNG - máx. 2 MB)</small></label>
+            <input type="file" id="adjuntoFin" class="form-control" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+            <div id="infoAdjFin" class="adjunto-info d-none"></div>
+          </div>
+        </div>
+
+        <div class="mt-4 text-end">
+          <button type="submit" id="btnGuardar" class="btn btn-success btn-custom">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Registro
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CONSULTA -->
+  <div class="card card-custom">
+    <div class="card-header card-header-busqueda d-flex justify-content-between align-items-center">
+      <span><i class="fa-solid fa-magnifying-glass me-2"></i>Consultar Comisiones</span>
+      <span id="contadorRegistros" class="badge bg-light text-dark">0</span>
+    </div>
+    <div class="card-body p-4">
+      <form id="formBusqueda" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Buscar</label>
+          <input type="text" id="buscarTexto" class="form-control" placeholder="Apellido, comisión, país, expediente...">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Tipo</label>
+          <select id="buscarTipo" class="form-select">
+            <option value="Todos">Todos</option>
+            <option value="Nacional">Nacional</option>
+            <option value="Internacional">Internacional</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Estado</label>
+          <select id="buscarEstado" class="form-select">
+            <option value="Todos">Todos</option>
+            <option value="Planificada">Planificada</option>
+            <option value="En curso">En curso</option>
+            <option value="Finalizada">Finalizada</option>
+            <option value="Cancelada">Cancelada</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Inicio desde</label>
+          <input type="date" id="fechaDesde" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Inicio hasta</label>
+          <input type="date" id="fechaHasta" class="form-control">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="button" class="btn btn-primary w-100 btn-custom" onclick="ejecutarBusqueda()"><i class="fa-solid fa-filter"></i></button>
+        </div>
+      </form>
+
+      <hr class="my-4">
+      <div class="table-container">
+        <table class="table table-hover align-middle table-sm">
+          <thead class="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>Estado</th>
+              <th>Tipo</th>
+              <th>Personal</th>
+              <th>Comisión</th>
+              <th>Motivo / Actividad</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              <th>Días</th>
+              <th>País</th>
+              <th>Ciudad</th>
+              <th>Expediente</th>
+              <th>Informes</th>
+              <th>Gastos PNA</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaResultados">
+            <tr><td colspan="15" class="text-center text-muted texto-vacio"><span class="spinner-border spinner-border-sm me-2"></span>Cargando datos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="paginacion-barra">
+        <span class="info-pagina" id="infoPagina"></span>
+        <div class="paginacion" id="paginacion"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button type="button" id="btnFab" class="fab" onclick="alternarPanel()" title="Nuevo registro">
+  <i class="fa-solid fa-plus"></i>
+</button>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
