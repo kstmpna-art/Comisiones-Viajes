@@ -313,6 +313,32 @@ input[readonly] {
   background-clip: padding-box;
 }
 
+.switch-cal .form-check-input {
+  width: 2.6em;
+  height: 1.4em;
+  cursor: pointer;
+}
+
+.switch-cal .form-check-input:checked {
+  background-color: var(--v1);
+  border-color: var(--v1);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.16);
+}
+
+.switch-cal .form-check-label {
+  font-size: 0.9rem;
+  color: var(--suave);
+  cursor: pointer;
+  padding-left: 4px;
+}
+
+.switch-cal .form-check-label .fa-google {
+  background: linear-gradient(90deg, #4285f4, #ea4335, #fbbc05, #34a853);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 /* ---------- Adjuntos (informes) ---------- */
 input[type="file"].form-control {
   background: #fff;
