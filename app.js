@@ -101,7 +101,7 @@ function llamarAPI(accion, datos) {
     });
 }
 
-var MAX_ARCHIVO = 2 * 1024 * 1024;
+var MAX_ARCHIVO = 10 * 1024 * 1024;
 
 function llamarAPIPost(accion, datos) {
   if (!API_URL) {
@@ -132,7 +132,7 @@ function leerArchivo(file) {
   return new Promise(function (resolve, reject) {
     if (!file) return resolve(null);
     if (file.size > MAX_ARCHIVO) {
-      reject(new Error("El archivo '" + file.name + "' supera los 2 MB."));
+      reject(new Error("El archivo '" + file.name + "' supera los 10 MB."));
       return;
     }
     var lector = new FileReader();
@@ -299,7 +299,8 @@ document.getElementById("formRegistro").addEventListener("submit", function (e) 
     pais: document.getElementById("pais").value,
     ciudad: document.getElementById("ciudad").value,
     expediente: document.getElementById("expediente").value,
-    gastosPna: document.getElementById("gastosPna").value
+    gastosPna: document.getElementById("gastosPna").value,
+    enviarCalendario: document.getElementById("enviarCalendario").checked
   };
 
   var archivoInicio = document.getElementById("adjuntoInicio").files[0] || null;
@@ -502,25 +503,33 @@ function ejecutarBusqueda() {
 
 function recargarDatos() {
   var tbody = document.getElementById("tablaResultados");
-  tbody.innerHTML = '<tr><td colspan="15" class="text-center text-muted texto-vacio">' +
+  tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted texto-vacio">' +
     '<span class="spinner-border spinner-border-sm me-2"></span>Cargando datos...</td></tr>';
 
   return llamarAPI("cargarTodo", {})
     .then(function (res) {
       if (res && res.exito) {
-        todosRegistros = res.registros || [];
+        todosRegistros = (res.registros || []).slice().sort(function (a, b) {
+          var fa = a.fechaInicio || "";
+          var fb = b.fechaInicio || "";
+          if (!fa && !fb) return 0;
+          if (!fa) return 1;
+          if (!fb) return -1;
+          if (fa === fb) return 0;
+          return fa < fb ? 1 : -1;
+        });
         marcarApi(true);
         pintarKpis(res.resumen);
         ejecutarBusqueda();
       } else {
         marcarApi(false);
-        tbody.innerHTML = '<tr><td colspan="15" class="text-center text-danger">' +
+        tbody.innerHTML = '<tr><td colspan="14" class="text-center text-danger">' +
           escapeHTML((res && res.mensaje) || "Error al cargar los datos") + "</td></tr>";
       }
     })
     .catch(function (err) {
       marcarApi(false);
-      tbody.innerHTML = '<tr><td colspan="15" class="text-center text-danger">Error al cargar datos: ' +
+      tbody.innerHTML = '<tr><td colspan="14" class="text-center text-danger">Error al cargar datos: ' +
         escapeHTML(err.message) + " [API: " + escapeHTML(idDespliegue_()) + "]</td></tr>";
     });
 }
@@ -565,7 +574,7 @@ function renderizarTabla(datos) {
 
   var tbody = document.getElementById("tablaResultados");
   if (!listaRegistrosGlobal.length) {
-    tbody.innerHTML = '<tr><td colspan="15" class="text-center text-muted texto-vacio">No se encontraron registros.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted texto-vacio">No se encontraron registros.</td></tr>';
     dibujarPaginacion();
     return;
   }
@@ -597,8 +606,8 @@ function dibujarPagina() {
     var jerarquia = item.jerarquia ? ' <span class="badge bg-dark">' + escapeHTML(item.jerarquia) + "</span>" : "";
 
     tr.innerHTML = [
-      "<td><small>" + escapeHTML(item.id) + "</small></td>",
-      '<td><span class="badge ' + badgeEstado(item.estado) + '">' + escapeHTML(item.estado || "-") + "</span></td>",
+      '<td><span class="badge ' + badgeEstado(item.estado) + '">' + escapeHTML(item.estado || "-") + "</span>" +
+        (item.eventoId ? ' <i class="fa-solid fa-calendar-check text-success ms-1" title="Sincronizado con Google Calendar"></i>' : "") + "</td>",
       '<td><span class="badge ' + badgeTipo(item.tipo) + '">' + escapeHTML(item.tipo || "-") + "</span></td>",
       "<td>" + personal + jerarquia + "</td>",
       "<td>" + escapeHTML(item.nombreComision || "-") + "</td>",
@@ -721,6 +730,7 @@ function cargarParaEditar(index) {
   document.getElementById("ciudad").value = item.ciudad || "";
   document.getElementById("expediente").value = item.expediente || "";
   document.getElementById("gastosPna").value = item.gastosPna || "NO";
+  document.getElementById("enviarCalendario").checked = !!item.eventoId;
 
   document.getElementById("adjuntoInicio").value = "";
   document.getElementById("adjuntoFin").value = "";
@@ -749,6 +759,7 @@ function cancelarEdicion() {
   document.getElementById("fechaFin").value = new Date().toISOString().split("T")[0];
   document.getElementById("estado").value = "Planificada";
   document.getElementById("gastosPna").value = "NO";
+  document.getElementById("enviarCalendario").checked = true;
 
   document.getElementById("adjuntoInicio").value = "";
   document.getElementById("adjuntoFin").value = "";
@@ -785,7 +796,11 @@ function procederEliminar(id) {
   llamarAPI("eliminar", { id: id })
     .then(function (res) {
       if (res && res.exito) {
-        notificarExito(res.mensaje || "Registro eliminado");
+        if (res.advertencia) {
+          notificar("warning", "Eliminado con advertencia", res.mensaje);
+        } else {
+          notificarExito(res.mensaje || "Registro eliminado");
+        }
         recargarDatos();
       } else {
         notificar("error", "Error", (res && res.mensaje) || "No se pudo eliminar");
