@@ -137,6 +137,16 @@
             <input type="text" id="nombreComision" class="form-control" placeholder="Ej: Galapex">
           </div>
 
+          <div class="col-12 mt-2">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label fw-bold mb-0">Acompañantes del mismo viaje <small class="text-muted">(opcional)</small></label>
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarAcompanante()">
+                <i class="fa-solid fa-plus me-1"></i>Agregar persona
+              </button>
+            </div>
+            <div id="listaAcompanantes"></div>
+          </div>
+
           <div class="col-md-4">
             <label class="form-label fw-bold">Motivo / Actividad</label>
             <input type="text" id="motivo" class="form-control" placeholder="Ej: Pesca no reglamentada INNDR" required>
@@ -197,44 +207,69 @@
       <span id="contadorRegistros" class="badge bg-light text-dark">0</span>
     </div>
     <div class="card-body p-4">
-      <form id="formBusqueda" class="row g-3">
-        <div class="col-md-3">
-          <label class="form-label fw-bold">Buscar</label>
-          <input type="text" id="buscarTexto" class="form-control" placeholder="Apellido, comisión, país, expediente...">
+      <form id="formBusqueda">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Buscar</label>
+            <input type="text" id="buscarTexto" class="form-control" placeholder="Apellido, comisión, país, expediente...">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Persona</label>
+            <select id="buscarPersona" class="form-select">
+              <option value="Todas">Todas las personas</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Tipo</label>
+            <select id="buscarTipo" class="form-select">
+              <option value="Todos">Todos</option>
+              <option value="Nacional">Nacional</option>
+              <option value="Internacional">Internacional</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Estado</label>
+            <select id="buscarEstado" class="form-select">
+              <option value="Todos">Todos</option>
+              <option value="Planificada">Planificada</option>
+              <option value="En curso">En curso</option>
+              <option value="Finalizada">Finalizada</option>
+              <option value="Cancelada">Cancelada</option>
+            </select>
+          </div>
         </div>
-        <div class="col-md-2">
-          <label class="form-label fw-bold">Tipo</label>
-          <select id="buscarTipo" class="form-select">
-            <option value="Todos">Todos</option>
-            <option value="Nacional">Nacional</option>
-            <option value="Internacional">Internacional</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label fw-bold">Estado</label>
-          <select id="buscarEstado" class="form-select">
-            <option value="Todos">Todos</option>
-            <option value="Planificada">Planificada</option>
-            <option value="En curso">En curso</option>
-            <option value="Finalizada">Finalizada</option>
-            <option value="Cancelada">Cancelada</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label fw-bold">Inicio desde</label>
-          <input type="date" id="fechaDesde" class="form-control">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label fw-bold">Inicio hasta</label>
-          <input type="date" id="fechaHasta" class="form-control">
-        </div>
-        <div class="col-md-1 d-flex align-items-end">
-          <button type="button" class="btn btn-primary w-100 btn-custom" onclick="ejecutarBusqueda()"><i class="fa-solid fa-filter"></i></button>
+        <div class="row g-3 mt-1">
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Inicio desde</label>
+            <input type="date" id="fechaDesde" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Inicio hasta</label>
+            <input type="date" id="fechaHasta" class="form-control">
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button type="button" class="btn btn-primary w-100 btn-custom" onclick="ejecutarBusqueda()">
+              <i class="fa-solid fa-filter me-1"></i>Filtrar
+            </button>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button type="button" class="btn btn-secondary w-100 btn-custom" onclick="limpiarTodo()">
+              <i class="fa-solid fa-eraser me-1"></i>Limpiar
+            </button>
+          </div>
         </div>
       </form>
 
       <hr class="my-4">
-      <div class="table-container">
+      <div class="vista-tabs">
+        <button type="button" id="tabTabla" class="vista-tab vista-tab-activa" onclick="cambiarVista('tabla')">
+          <i class="fa-solid fa-table me-1"></i>Tabla
+        </button>
+        <button type="button" id="tabGantt" class="vista-tab" onclick="cambiarVista('gantt')">
+          <i class="fa-solid fa-calendar-days me-1"></i>Cronograma
+        </button>
+      </div>
+      <div class="table-container" id="contenedorTabla">
         <table class="table table-hover align-middle table-sm">
           <thead class="table-dark">
             <tr>
@@ -264,6 +299,41 @@
         <span class="info-pagina" id="infoPagina"></span>
         <div class="paginacion" id="paginacion"></div>
       </div>
+
+      <div class="gantt-container d-none" id="contenedorGantt">
+        <div class="gantt-toolbar">
+          <label>Año
+            <input type="number" id="ganttAnio" min="2000" max="2100">
+          </label>
+          <label>Rango desde
+            <input type="date" id="ganttDesde">
+          </label>
+          <label>Rango hasta
+            <input type="date" id="ganttHasta">
+          </label>
+          <button type="button" class="gantt-btn gantt-btn-primario" id="btnGanttVer">Ver rango</button>
+          <button type="button" class="gantt-btn" id="btnGanttHoy">Hoy</button>
+          <div class="gantt-zoom">
+            <button type="button" class="gantt-btn" data-zoom="0">Año</button>
+            <button type="button" class="gantt-btn" data-zoom="3">Mes</button>
+            <button type="button" class="gantt-btn" data-zoom="5">Semana</button>
+            <button type="button" class="gantt-zoom-btn" id="btnZoomOut" title="Alejar"><i class="fa-solid fa-minus"></i></button>
+            <span class="gantt-zoom-nivel" id="ganttZoomNivel">Año</span>
+            <button type="button" class="gantt-zoom-btn" id="btnZoomIn" title="Acercar"><i class="fa-solid fa-plus"></i></button>
+          </div>
+          <span class="gantt-ayuda">Ctrl + rueda: zoom</span>
+        </div>
+        <div class="gantt-leyenda">
+          <span><span class="gantt-dot dot-planificada"></span>Planificada</span>
+          <span><span class="gantt-dot dot-encurso"></span>En curso</span>
+          <span><span class="gantt-dot dot-finalizada"></span>Finalizada</span>
+          <span><span class="gantt-dot dot-cancelada"></span>Cancelada</span>
+          <span class="ms-auto" id="ganttRango"></span>
+        </div>
+        <div class="gantt-scroll">
+          <div id="ganttCuerpo"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -272,6 +342,25 @@
   <i class="fa-solid fa-plus"></i>
 </button>
 
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content modal-detalle">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalDetalleTitulo">Detalle de la comisión</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body" id="modalDetalleCuerpo"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-warning btn-custom" id="btnModalEditar">
+          <i class="fa-solid fa-pen me-1"></i>Editar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 
