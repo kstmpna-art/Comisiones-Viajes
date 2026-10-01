@@ -276,6 +276,71 @@ function modoCargando(btn, activo, texto) {
   }
 }
 
+function agregarAcompanante(datos) {
+  datos = datos || {};
+  var cont = document.getElementById("listaAcompanantes");
+  if (!cont) return;
+  var div = document.createElement("div");
+  div.className = "row g-2 acompanante-bloque align-items-end";
+  div.innerHTML =
+    '<div class="col-md-2"><label class="form-label fw-bold">Jerarquía</label>' +
+    '<input type="text" class="form-control acomp-jerarquia" placeholder="Ej: PG" value="' + escapeHTML(datos.jerarquia || "") + '"></div>' +
+    '<div class="col-md-3"><label class="form-label fw-bold">DNI</label>' +
+    '<input type="text" class="form-control acomp-dni" placeholder="Ej: 31XXXXXX" value="' + escapeHTML(datos.dni || "") + '"></div>' +
+    '<div class="col-md-3"><label class="form-label fw-bold">Apellido</label>' +
+    '<input type="text" class="form-control acomp-apellido" placeholder="Apellido" value="' + escapeHTML(datos.apellido || "") + '"></div>' +
+    '<div class="col-md-3"><label class="form-label fw-bold">Nombre</label>' +
+    '<input type="text" class="form-control acomp-nombre" placeholder="Nombre" value="' + escapeHTML(datos.nombre || "") + '"></div>' +
+    '<div class="col-md-1 d-flex align-items-end"><button type="button" class="btn btn-sm btn-outline-danger w-100" ' +
+    'onclick="this.closest(\'.acompanante-bloque\').remove()" title="Quitar"><i class="fa-solid fa-trash"></i></button></div>';
+  cont.appendChild(div);
+}
+
+function obtenerAcompanantes() {
+  var lista = [];
+  var bloques = document.querySelectorAll("#listaAcompanantes .acompanante-bloque");
+  Array.prototype.forEach.call(bloques, function (b) {
+    var ap = b.querySelector(".acomp-apellido").value.trim();
+    var no = b.querySelector(".acomp-nombre").value.trim();
+    if (!ap && !no) return;
+    lista.push({
+      jerarquia: b.querySelector(".acomp-jerarquia").value.trim(),
+      dni: b.querySelector(".acomp-dni").value.trim(),
+      apellido: ap,
+      nombre: no
+    });
+  });
+  return lista.slice(0, 20);
+}
+
+function limpiarAcompanantes() {
+  var cont = document.getElementById("listaAcompanantes");
+  if (cont) cont.innerHTML = "";
+}
+
+function personasDelRegistro(r) {
+  var lista = [];
+  function agregar(ap, no) {
+    var clave = String(ap || "").trim() + ", " + String(no || "").trim();
+    if (clave && clave !== ", " && lista.indexOf(clave) === -1) lista.push(clave);
+  }
+  agregar(r.apellido, r.nombre);
+  (r.acompanantes || []).forEach(function (a) { agregar(a.apellido, a.nombre); });
+  return lista;
+}
+
+function textoAcompanantes(item) {
+  var acs = item.acompanantes || [];
+  if (!acs.length) return '<span class="text-muted">-</span>';
+  return acs.map(function (a) {
+    var t = escapeHTML(a.apellido) + ", " + escapeHTML(a.nombre);
+    var extra = [];
+    if (a.jerarquia) extra.push(escapeHTML(a.jerarquia));
+    if (a.dni) extra.push("DNI " + escapeHTML(a.dni));
+    return t + (extra.length ? " (" + extra.join(" · ") + ")" : "");
+  }).join("<br>");
+}
+
 document.getElementById("formRegistro").addEventListener("submit", function (e) {
   e.preventDefault();
 
@@ -300,7 +365,8 @@ document.getElementById("formRegistro").addEventListener("submit", function (e) 
     ciudad: document.getElementById("ciudad").value,
     expediente: document.getElementById("expediente").value,
     gastosPna: document.getElementById("gastosPna").value,
-    enviarCalendario: document.getElementById("enviarCalendario").checked
+    enviarCalendario: document.getElementById("enviarCalendario").checked,
+    acompanantes: obtenerAcompanantes()
   };
 
   var archivoInicio = document.getElementById("adjuntoInicio").files[0] || null;
@@ -409,12 +475,45 @@ function pintarKpis(resumen) {
   });
 }
 
+function clavePersona(r) {
+  var ap = (r.apellido || "").trim();
+  var no = (r.nombre || "").trim();
+  if (!ap && !no) return "";
+  return ap + ", " + no;
+}
+
+function llenarPersonas() {
+  var sel = document.getElementById("buscarPersona");
+  if (!sel) return;
+  var anterior = sel.value || "Todas";
+  var unicas = {};
+  todosRegistros.forEach(function (r) {
+    personasDelRegistro(r).forEach(function (clave) { unicas[clave] = true; });
+  });
+  var lista = Object.keys(unicas).sort(function (a, b) {
+    return a.toLowerCase() < b.toLowerCase() ? -1 : 1;
+  });
+  sel.innerHTML = '<option value="Todas">Todas las personas</option>' +
+    lista.map(function (p) {
+      return '<option value="' + escapeHTML(p) + '">' + escapeHTML(p) + "</option>";
+    }).join("");
+  sel.value = unicas[anterior] ? anterior : "Todas";
+}
+
 function limpiarFiltros() {
   document.getElementById("buscarTexto").value = "";
+  document.getElementById("buscarPersona").value = "Todas";
   document.getElementById("buscarTipo").value = "Todos";
   document.getElementById("buscarEstado").value = "Todos";
   document.getElementById("fechaDesde").value = "";
   document.getElementById("fechaHasta").value = "";
+}
+
+function limpiarTodo() {
+  kpiActivo = null;
+  marcarKpi();
+  limpiarFiltros();
+  ejecutarBusqueda();
 }
 
 function marcarKpi() {
@@ -446,6 +545,7 @@ function aplicarKpi(clave) {
 function criterioBusqueda() {
   return {
     texto: document.getElementById("buscarTexto").value,
+    persona: document.getElementById("buscarPersona").value,
     tipo: document.getElementById("buscarTipo").value,
     estado: document.getElementById("buscarEstado").value,
     fechaDesde: document.getElementById("fechaDesde").value,
@@ -453,7 +553,7 @@ function criterioBusqueda() {
   };
 }
 
-["buscarTexto", "buscarTipo", "buscarEstado", "fechaDesde", "fechaHasta"].forEach(function (id) {
+["buscarTexto", "buscarPersona", "buscarTipo", "buscarEstado", "fechaDesde", "fechaHasta"].forEach(function (id) {
   var campo = document.getElementById(id);
   if (!campo) return;
   campo.addEventListener("input", function () {
@@ -475,11 +575,115 @@ document.getElementById("formBusqueda").addEventListener("submit", function (e) 
   ejecutarBusqueda();
 });
 
+var NIVELES_ZOOM = ["Año", "Semestre", "Trimestre", "Mes", "Quincena", "Semana"];
+var DIAS_ZOOM = [365, 180, 90, 30, 14, 7];
+var ganttZoomIdx = 0;
+var ganttCentro = null;
+
+function nivelZoomActual() {
+  var d = document.getElementById("ganttDesde").value;
+  var h = document.getElementById("ganttHasta").value;
+  if (d && h && h >= d) return "Rango";
+  return NIVELES_ZOOM[ganttZoomIdx];
+}
+
+function actualizarEtiquetaZoom() {
+  var el = document.getElementById("ganttZoomNivel");
+  if (el) el.textContent = nivelZoomActual();
+}
+
+function salirDeRango() {
+  var d = document.getElementById("ganttDesde").value;
+  var h = document.getElementById("ganttHasta").value;
+  if (d && h && h >= d) {
+    ganttCentro = Math.round((fechaMS(d) + fechaMS(h)) / 2);
+    document.getElementById("ganttDesde").value = "";
+    document.getElementById("ganttHasta").value = "";
+  }
+  if (ganttCentro === null) {
+    var hh = new Date();
+    hh.setHours(0, 0, 0, 0);
+    ganttCentro = hh.getTime();
+  }
+}
+
+function fijarZoom(idx) {
+  ganttZoomIdx = Math.max(0, Math.min(NIVELES_ZOOM.length - 1, idx));
+  var anioEl = document.getElementById("ganttAnio");
+  if (anioEl && ganttCentro) anioEl.value = new Date(ganttCentro).getFullYear();
+  actualizarEtiquetaZoom();
+  dibujarGantt();
+}
+
+function zoomMas() {
+  salirDeRango();
+  fijarZoom(ganttZoomIdx + 1);
+}
+
+function zoomMenos() {
+  salirDeRango();
+  fijarZoom(ganttZoomIdx - 1);
+}
+
+document.getElementById("ganttAnio").addEventListener("change", function () {
+  document.getElementById("ganttDesde").value = "";
+  document.getElementById("ganttHasta").value = "";
+  ganttZoomIdx = 0;
+  ganttCentro = null;
+  actualizarEtiquetaZoom();
+  dibujarGantt();
+});
+
+document.getElementById("btnGanttHoy").addEventListener("click", function () {
+  var h = new Date();
+  h.setHours(0, 0, 0, 0);
+  document.getElementById("ganttAnio").value = h.getFullYear();
+  document.getElementById("ganttDesde").value = "";
+  document.getElementById("ganttHasta").value = "";
+  ganttCentro = h.getTime();
+  actualizarEtiquetaZoom();
+  dibujarGantt();
+});
+
+document.getElementById("btnGanttVer").addEventListener("click", function () {
+  actualizarEtiquetaZoom();
+  dibujarGantt();
+});
+
+document.getElementById("btnZoomIn").addEventListener("click", function () {
+  zoomMas();
+});
+
+document.getElementById("btnZoomOut").addEventListener("click", function () {
+  zoomMenos();
+});
+
+Array.prototype.forEach.call(document.querySelectorAll("[data-zoom]"), function (btn) {
+  btn.addEventListener("click", function () {
+    salirDeRango();
+    var idx = parseInt(btn.getAttribute("data-zoom"), 10);
+    if (idx === 0) ganttCentro = null;
+    fijarZoom(isNaN(idx) ? 0 : idx);
+  });
+});
+
+(function () {
+  var zona = document.querySelector(".gantt-scroll");
+  if (!zona) return;
+  zona.addEventListener("wheel", function (e) {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    if (e.deltaY > 0) zoomMenos();
+    else zoomMas();
+  }, { passive: false });
+})();
+
 function filtrarLocal() {
   var c = criterioBusqueda();
   var texto = (c.texto || "").trim().toLowerCase();
 
   return todosRegistros.filter(function (r) {
+    if (c.persona && c.persona !== "Todas" && personasDelRegistro(r).indexOf(c.persona) === -1) return false;
     if (c.tipo && c.tipo !== "Todos" && r.tipo !== c.tipo) return false;
     if (c.estado && c.estado !== "Todos" && r.estado !== c.estado) return false;
     if (c.fechaDesde && r.fechaInicio && r.fechaInicio < c.fechaDesde) return false;
@@ -520,6 +724,7 @@ function recargarDatos() {
         });
         marcarApi(true);
         pintarKpis(res.resumen);
+        llenarPersonas();
         ejecutarBusqueda();
       } else {
         marcarApi(false);
@@ -576,10 +781,12 @@ function renderizarTabla(datos) {
   if (!listaRegistrosGlobal.length) {
     tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted texto-vacio">No se encontraron registros.</td></tr>';
     dibujarPaginacion();
+    dibujarGantt();
     return;
   }
 
   dibujarPagina();
+  dibujarGantt();
 }
 
 function dibujarPagina() {
@@ -604,12 +811,17 @@ function dibujarPagina() {
     var tr = document.createElement("tr");
     var personal = escapeHTML(item.apellido) + ", " + escapeHTML(item.nombre);
     var jerarquia = item.jerarquia ? ' <span class="badge bg-dark">' + escapeHTML(item.jerarquia) + "</span>" : "";
+    var acompTexto = "";
+    var acs = personasDelRegistro(item).slice(1);
+    if (acs.length) {
+      acompTexto = '<div><small class="text-muted">+ ' + escapeHTML(acs.join("; ")) + "</small></div>";
+    }
 
     tr.innerHTML = [
       '<td><span class="badge ' + badgeEstado(item.estado) + '">' + escapeHTML(item.estado || "-") + "</span>" +
         (item.eventoId ? ' <i class="fa-solid fa-calendar-check text-success ms-1" title="Sincronizado con Google Calendar"></i>' : "") + "</td>",
       '<td><span class="badge ' + badgeTipo(item.tipo) + '">' + escapeHTML(item.tipo || "-") + "</span></td>",
-      "<td>" + personal + jerarquia + "</td>",
+      "<td>" + personal + jerarquia + acompTexto + "</td>",
       "<td>" + escapeHTML(item.nombreComision || "-") + "</td>",
       "<td><small>" + escapeHTML(item.motivo || "-") + "</small></td>",
       "<td>" + formatearFechaLatina(item.fechaInicio) + "</td>",
@@ -700,6 +912,304 @@ function irAPagina(n) {
   }
 }
 
+var vistaActual = "tabla";
+
+function cambiarVista(v) {
+  vistaActual = v;
+  document.getElementById("tabTabla").classList.toggle("vista-tab-activa", v === "tabla");
+  document.getElementById("tabGantt").classList.toggle("vista-tab-activa", v === "gantt");
+  document.getElementById("contenedorTabla").classList.toggle("d-none", v !== "tabla");
+  document.getElementById("contenedorGantt").classList.toggle("d-none", v !== "gantt");
+  var barra = document.querySelector(".paginacion-barra");
+  if (barra) barra.style.display = v === "tabla" ? "" : "none";
+  if (v === "gantt") {
+    var anio = document.getElementById("ganttAnio");
+    if (anio && !anio.value) anio.value = new Date().getFullYear();
+    dibujarGantt();
+  }
+}
+
+function claseGantt(estado) {
+  switch (estado) {
+    case "En curso": return "gantt-encurso";
+    case "Finalizada": return "gantt-finalizada";
+    case "Cancelada": return "gantt-cancelada";
+    default: return "gantt-planificada";
+  }
+}
+
+function fechaMS(iso) {
+  var p = String(iso || "").split("T")[0].split("-");
+  if (p.length !== 3) return null;
+  var t = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime();
+  return isNaN(t) ? null : t;
+}
+
+function isoDesdeMS(ms) {
+  var t = new Date(ms);
+  return t.getFullYear() + "-" + ("0" + (t.getMonth() + 1)).slice(-2) + "-" + ("0" + t.getDate()).slice(-2);
+}
+
+function dibujarGantt() {
+  var cuerpo = document.getElementById("ganttCuerpo");
+  var rango = document.getElementById("ganttRango");
+  if (!cuerpo) return;
+
+  var DIA = 86400000;
+
+  var hoyCero = new Date();
+  hoyCero.setHours(0, 0, 0, 0);
+  var hoyISO = isoDesdeMS(hoyCero.getTime());
+
+  var desdeVal = document.getElementById("ganttDesde").value;
+  var hastaVal = document.getElementById("ganttHasta").value;
+  var anioVal = parseInt(document.getElementById("ganttAnio").value, 10);
+  if (isNaN(anioVal)) anioVal = new Date().getFullYear();
+
+  var minMS;
+  var maxMS;
+
+  if (desdeVal && hastaVal && hastaVal >= desdeVal) {
+    minMS = fechaMS(desdeVal);
+    maxMS = fechaMS(hastaVal);
+  } else if (ganttZoomIdx === 0) {
+    minMS = new Date(anioVal, 0, 1).getTime();
+    maxMS = new Date(anioVal, 11, 31).getTime();
+  } else {
+    if (ganttCentro === null) {
+      var hc = new Date();
+      hc.setHours(0, 0, 0, 0);
+      ganttCentro = hc.getTime();
+    }
+    var spanZoom = DIAS_ZOOM[ganttZoomIdx];
+    minMS = ganttCentro - Math.floor((spanZoom - 1) / 2) * DIA;
+    maxMS = minMS + (spanZoom - 1) * DIA;
+  }
+  actualizarEtiquetaZoom();
+
+  var ALTO_CARRIL = 30;
+
+  var grupos = {};
+  (listaRegistrosGlobal || []).forEach(function (r, idx) {
+    var ini = fechaMS(r.fechaInicio);
+    var fin = fechaMS(r.fechaFin);
+    if (ini === null || fin === null) return;
+    if (fin < minMS || ini > maxMS) return;
+    var claves = personasDelRegistro(r);
+    if (!claves.length) claves = ["Sin asignar"];
+  claves.forEach(function (clave) {
+      if (!grupos[clave]) grupos[clave] = [];
+      grupos[clave].push({ r: r, idx: idx, ini: ini, fin: fin, carril: 0 });
+    });
+  });
+
+  var claves = Object.keys(grupos).sort(function (a, b) {
+    if (a === "Sin asignar") return 1;
+    if (b === "Sin asignar") return -1;
+    var al = a.toLowerCase();
+    var bl = b.toLowerCase();
+    return al < bl ? -1 : al > bl ? 1 : 0;
+  });
+
+  if (!claves.length) {
+    if (rango) rango.textContent = "";
+    cuerpo.innerHTML = '<div class="text-center text-muted p-4">Sin comisiones en el período elegido.</div>';
+    return;
+  }
+
+  claves.forEach(function (clave) {
+    var viajes = grupos[clave];
+    viajes.sort(function (a, b) { return a.ini - b.ini || a.fin - b.fin; });
+    var fines = [];
+    viajes.forEach(function (t) {
+      var carril = 0;
+      while (carril < fines.length && !(fines[carril] < t.ini)) carril++;
+      t.carril = carril;
+      fines[carril] = Math.max(fines[carril] === undefined ? -1 : fines[carril], t.fin);
+    });
+    viajes._carriles = Math.max(1, fines.length);
+  });
+
+  var totalDias = Math.round((maxMS - minMS) / DIA) + 1;
+  var paso = totalDias > 180 ? 30 : totalDias > 90 ? 14 : totalDias > 60 ? 7 : totalDias > 31 ? 3 : totalDias > 14 ? 2 : 1;
+
+  function pos(ms) { return ((ms - minMS) / DIA) / totalDias * 100; }
+  function ancho(ms1, ms2) { return Math.max((((ms2 - ms1) / DIA) + 1) / totalDias * 100, 1.5); }
+
+  var ticks = "";
+  for (var d = 0; d < totalDias; d += paso) {
+    var t = new Date(minMS + d * DIA);
+    ticks += '<span class="gantt-tick" style="left:' + (d / totalDias * 100) + '%">' +
+      ("0" + t.getDate()).slice(-2) + "/" + ("0" + (t.getMonth() + 1)).slice(-2) + "</span>";
+  }
+
+  var hoyMS = fechaMS(hoyISO);
+  var hoyHTML = "";
+  var hoyEje = "";
+  if (hoyMS !== null && hoyMS >= minMS && hoyMS <= maxMS) {
+    var pctHoy = pos(hoyMS);
+    var ajusteHoy = pctHoy < 7 ? "translate(0,0)" : pctHoy > 93 ? "translate(-100%,0)" : "translate(-50%,0)";
+    var fh = new Date(hoyMS);
+    hoyHTML = '<div class="gantt-hoy" style="left:' + pctHoy + '%" title="Hoy"></div>';
+    hoyEje = '<span class="gantt-hoy-etiqueta" style="left:' + pctHoy + "%;transform:" + ajusteHoy + '">HOY ' +
+      ("0" + fh.getDate()).slice(-2) + "/" + ("0" + (fh.getMonth() + 1)).slice(-2) + "</span>";
+  }
+
+  var fondo = (100 / totalDias) + "%";
+
+  var extras = "";
+  var detalleFino = totalDias <= 62;
+
+  if (detalleFino) {
+    for (var gd = 0; gd < totalDias; gd++) {
+      var gms = minMS + gd * DIA;
+      var gfecha = new Date(gms);
+      if (gfecha.getDay() === 6) {
+        var anchoFin = Math.min(2, totalDias - gd) / totalDias * 100;
+        extras += '<div class="gantt-fin" style="left:' + (gd / totalDias * 100) +
+          "%;width:" + anchoFin + '%"></div>';
+      }
+      if (gfecha.getDate() === 1) {
+        extras += '<div class="gantt-mes" style="left:' + (gd / totalDias * 100) + '%"></div>';
+      }
+    }
+  } else {
+    var mCursor = minMS;
+    var mi = 0;
+    while (mCursor <= maxMS) {
+      var md = new Date(mCursor);
+      var proxMes = new Date(md.getFullYear(), md.getMonth() + 1, 1).getTime();
+      var iniBanda = Math.max(mCursor, minMS);
+      var finBanda = Math.min(proxMes, maxMS + DIA);
+      if (mi % 2 === 1 && finBanda > iniBanda) {
+        extras += '<div class="gantt-mes-fondo" style="left:' + ((iniBanda - minMS) / DIA) / totalDias * 100 +
+          "%;width:" + ((finBanda - iniBanda) / DIA) / totalDias * 100 + '%"></div>';
+      }
+      mCursor = proxMes;
+      mi++;
+    }
+  }
+
+  var html = '<div class="gantt-fila gantt-eje"><div class="gantt-etiqueta"></div>' +
+    '<div class="gantt-pista gantt-pista-eje">' + ticks + extras + hoyEje + "</div></div>";
+
+  var totalViajes = 0;
+
+  claves.forEach(function (clave) {
+    var viajes = grupos[clave];
+    totalViajes += viajes.length;
+    var multi = viajes._carriles > 1;
+
+    var gmin = Math.min.apply(null, viajes.map(function (t) { return t.ini; }));
+    var gmax = Math.max.apply(null, viajes.map(function (t) { return t.fin; }));
+
+    var etiqueta = clave === "Sin asignar" ? "Sin asignar" : escapeHTML(clave);
+    html += '<div class="gantt-fila"><div class="gantt-etiqueta">' +
+      '<div class="fw-bold text-truncate">' + etiqueta +
+      (multi ? ' <i class="fa-solid fa-triangle-exclamation text-danger ms-1" title="Viajes superpuestos en fechas"></i>' : "") + "</div>" +
+      '<div class="text-muted text-truncate"><small>' + viajes.length +
+      (viajes.length === 1 ? " viaje" : " viajes") + " · " +
+      formatearFechaLatina(isoDesdeMS(gmin)) + " → " + formatearFechaLatina(isoDesdeMS(gmax)) +
+      "</small></div></div>" +
+      '<div class="gantt-pista" style="background-size:' + fondo + " 100%;height:" +
+      (viajes._carriles * ALTO_CARRIL + 14) + 'px">' + hoyHTML + extras;
+
+    viajes.forEach(function (t) {
+      var r = t.r;
+      var com = escapeHTML(r.nombreComision || "Sin comisión");
+      var detalle = escapeHTML(clave) + " · " + com + " — " + formatearFechaLatina(r.fechaInicio) +
+        " → " + formatearFechaLatina(r.fechaFin) + " (" + (r.cantidadDias || "?") +
+        " días) · " + (r.estado || "") + " · " + escapeHTML(r.motivo || "");
+
+      html += '<div class="gantt-barra gantt-barra-carril ' + claseGantt(r.estado) +
+        (multi ? " gantt-superpuesta" : "") + '" style="left:' + pos(t.ini) +
+        "%;width:" + ancho(t.ini, t.fin) + ";top:" + (7 + t.carril * ALTO_CARRIL) + 'px" title="' +
+        detalle.replace(/"/g, "&quot;") + '" onclick="verDetalle(' + t.idx + ')"><span>' +
+        com + "</span></div>";
+    });
+
+    html += "</div></div>";
+  });
+
+  cuerpo.innerHTML = html;
+  if (rango) {
+    rango.textContent = formatearFechaLatina(isoDesdeMS(minMS)) + " → " +
+      formatearFechaLatina(isoDesdeMS(maxMS)) + " · " + claves.length +
+      (claves.length === 1 ? " persona" : " personas") + " · " + totalViajes +
+      (totalViajes === 1 ? " comisión" : " comisiones");
+  }
+}
+
+var detalleIdx = null;
+
+function filaDetalle(etiqueta, valorHTML, ancho) {
+  return '<div class="' + (ancho || "col-md-6 col-lg-4") + ' detalle-item">' +
+    '<div class="detalle-etiqueta">' + etiqueta + "</div>" +
+    '<div class="detalle-valor">' + (valorHTML || "-") + "</div></div>";
+}
+
+function enlaceInforme(url, texto) {
+  if (!url) return '<span class="text-muted">-</span>';
+  return '<a href="' + escapeHTML(url) + '" target="_blank" rel="noopener">' +
+    '<i class="fa-solid fa-file-arrow-down me-1"></i>' + texto + "</a>";
+}
+
+function verDetalle(idx) {
+  var item = listaRegistrosGlobal[idx];
+  if (!item) return;
+
+  if (!(window.bootstrap && bootstrap.Modal)) {
+    cargarParaEditar(idx);
+    return;
+  }
+
+  detalleIdx = idx;
+
+  document.getElementById("modalDetalleTitulo").innerHTML =
+    '<i class="fa-solid fa-circle-info me-2"></i>' +
+    escapeHTML(item.nombreComision || "Comisión") +
+    ' <small class="titulo-secundario">' + escapeHTML(item.apellido) + ", " + escapeHTML(item.nombre) + "</small>";
+
+  var html = '<div class="row g-3">' +
+    filaDetalle("Estado", '<span class="badge ' + badgeEstado(item.estado) + '">' + escapeHTML(item.estado || "-") + "</span>") +
+    filaDetalle("Tipo", '<span class="badge ' + (item.tipo === "Nacional" ? "badge-nacional" : "badge-internacional") + '">' + escapeHTML(item.tipo || "-") + "</span>") +
+    filaDetalle("Jerarquía", escapeHTML(item.jerarquia)) +
+    filaDetalle("Apellido", escapeHTML(item.apellido)) +
+    filaDetalle("Nombre", escapeHTML(item.nombre)) +
+    filaDetalle("DNI", escapeHTML(item.dni)) +
+    filaDetalle("Nombre comisión", escapeHTML(item.nombreComision), "col-12") +
+    filaDetalle("Motivo / Actividad", escapeHTML(item.motivo), "col-12") +
+    filaDetalle("Acompañantes", textoAcompanantes(item), "col-12") +
+    filaDetalle("Fecha de inicio", formatearFechaLatina(item.fechaInicio)) +
+    filaDetalle("Fecha de fin", formatearFechaLatina(item.fechaFin)) +
+    filaDetalle("Cantidad de días", escapeHTML(item.cantidadDias)) +
+    filaDetalle("País", escapeHTML(item.pais)) +
+    filaDetalle("Ciudad", escapeHTML(item.ciudad)) +
+    filaDetalle("N° expediente / Informe", escapeHTML(item.expediente), "col-md-6 col-lg-8") +
+    filaDetalle("Gastos a cargo PNA", '<span class="badge ' + (item.gastosPna === "SI" ? "bg-warning text-dark" : "bg-secondary") + '">' + escapeHTML(item.gastosPna || "-") + "</span>") +
+    filaDetalle("Informe de inicio", enlaceInforme(item.adjuntoInicio, "Ver informe")) +
+    filaDetalle("Informe de cierre", enlaceInforme(item.adjuntoFin, "Ver informe")) +
+    filaDetalle("Google Calendar", item.eventoId
+      ? '<span class="badge bg-success"><i class="fa-solid fa-calendar-check me-1"></i>Sincronizado</span>'
+      : '<span class="text-muted">No sincronizado</span>') +
+    "</div>";
+
+  document.getElementById("modalDetalleCuerpo").innerHTML = html;
+
+  var modalEl = document.getElementById("modalDetalle");
+  var instancia = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+  instancia.show();
+}
+
+document.getElementById("btnModalEditar").addEventListener("click", function () {
+  var modalEl = document.getElementById("modalDetalle");
+  if (window.bootstrap && bootstrap.Modal) {
+    var instancia = bootstrap.Modal.getInstance(modalEl);
+    if (instancia) instancia.hide();
+  }
+  if (detalleIdx !== null) cargarParaEditar(detalleIdx);
+});
+
 function badgeEstado(estado) {
   switch (estado) {
     case "Planificada": return "bg-secondary";
@@ -737,6 +1247,9 @@ function cargarParaEditar(index) {
   mostrarAdjunto("infoAdjInicio", item.adjuntoInicio, "Inicio");
   mostrarAdjunto("infoAdjFin", item.adjuntoFin, "Fin");
 
+  limpiarAcompanantes();
+  (item.acompanantes || []).forEach(function (a) { agregarAcompanante(a); });
+
   document.getElementById("tituloFormulario").innerHTML = '<i class="fa-solid fa-pen-to-square me-2"></i> Editar Comisión';
   document.getElementById("btnGuardar").innerHTML = '<i class="fa-solid fa-arrows-rotate me-1"></i> Actualizar Registro';
   document.getElementById("btnGuardar").className = "btn btn-warning btn-custom";
@@ -765,6 +1278,7 @@ function cancelarEdicion() {
   document.getElementById("adjuntoFin").value = "";
   mostrarAdjunto("infoAdjInicio", "", "Inicio");
   mostrarAdjunto("infoAdjFin", "", "Fin");
+  limpiarAcompanantes();
   calcularDias();
 
   document.getElementById("tituloFormulario").innerHTML = '<i class="fa-solid fa-plus-circle me-2"></i> Nueva Comisión / Viaje';
