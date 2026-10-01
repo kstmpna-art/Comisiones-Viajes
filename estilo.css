@@ -188,6 +188,13 @@ input[readonly] {
   box-shadow: 0 10px 22px rgba(245, 158, 11, 0.35);
 }
 
+.btn-secondary.btn-custom {
+  background: linear-gradient(90deg, #64748b, #475569);
+  border: none;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(100, 116, 139, 0.35);
+}
+
 .btn-primary.btn-custom {
   background: linear-gradient(90deg, var(--v1), var(--cyan));
   border: none;
@@ -337,6 +344,18 @@ input[readonly] {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.acompanante-bloque {
+  background: #f8fafc;
+  border: 1px dashed var(--borde);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.acompanante-bloque .form-label {
+  margin-bottom: 3px;
 }
 
 /* ---------- Adjuntos (informes) ---------- */
@@ -652,6 +671,412 @@ input[type="file"].form-control::file-selector-button:hover {
   color: var(--suave);
   font-weight: 700;
   padding: 0 2px;
+}
+
+/* ---------- Pestañas Tabla / Gantt ---------- */
+.vista-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.vista-tab {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 20px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  background: #eef2ff;
+  color: var(--v1);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.vista-tab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.25);
+}
+
+.vista-tab-activa {
+  background: linear-gradient(90deg, var(--v1), var(--cyan));
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(99, 102, 241, 0.4);
+}
+
+/* ---------- Diagrama de Gantt ---------- */
+.gantt-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--borde);
+}
+
+.gantt-toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--suave);
+  margin-bottom: 0;
+}
+
+.gantt-toolbar input[type="date"],
+.gantt-toolbar input[type="number"] {
+  border: 1.5px solid var(--borde);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 0.88rem;
+  background: #fff;
+  color: var(--tinta);
+}
+
+.gantt-toolbar input[type="date"]:focus,
+.gantt-toolbar input[type="number"]:focus {
+  border-color: var(--v1);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.16);
+  outline: none;
+}
+
+.gantt-toolbar input[type="number"] {
+  width: 100px;
+}
+
+.gantt-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  background: #eef2ff;
+  color: var(--v1);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.gantt-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+}
+
+.gantt-btn-primario {
+  background: linear-gradient(90deg, var(--v1), var(--cyan));
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.35);
+}
+
+.gantt-zoom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.gantt-zoom-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 9px;
+  background: #eef2ff;
+  color: var(--v1);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.gantt-zoom-btn:hover {
+  background: linear-gradient(90deg, var(--v1), var(--cyan));
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.gantt-zoom-nivel {
+  min-width: 88px;
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--v1);
+}
+
+.gantt-ayuda {
+  font-size: 0.72rem;
+  color: var(--suave);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gantt-dia {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--v1);
+  box-shadow: 0 0 6px rgba(99, 102, 241, 0.8);
+  z-index: 2;
+  pointer-events: none;
+}
+.gantt-container {
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.gantt-leyenda {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--borde);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--suave);
+}
+
+.gantt-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  margin-right: 5px;
+  vertical-align: baseline;
+}
+
+.dot-planificada { background: linear-gradient(135deg, #94a3b8, #64748b); }
+.dot-encurso { background: linear-gradient(135deg, #f59e0b, #f97316); }
+.dot-finalizada { background: linear-gradient(135deg, #10b981, #06b6d4); }
+.dot-cancelada { background: linear-gradient(135deg, #f43f5e, #e11d48); }
+
+#ganttRango {
+  font-weight: 700;
+  color: var(--v1);
+}
+
+.gantt-scroll {
+  overflow: auto;
+  max-height: 480px;
+}
+
+.gantt-fila {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-width: 760px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.gantt-fila:last-child {
+  border-bottom: none;
+}
+
+.gantt-etiqueta {
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  background: #fff;
+  border-right: 1px solid var(--borde);
+  min-width: 0;
+}
+
+.gantt-pista {
+  position: relative;
+  min-height: 52px;
+  background-image: linear-gradient(90deg, #d7e0f0 1px, transparent 1px);
+}
+
+.gantt-fin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(244, 63, 94, 0.07);
+  border-left: 1px dashed rgba(244, 63, 94, 0.35);
+  border-right: 1px dashed rgba(244, 63, 94, 0.35);
+  pointer-events: none;
+}
+
+.gantt-mes-fondo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(99, 102, 241, 0.06);
+  pointer-events: none;
+}
+
+.gantt-mes {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--v1);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.gantt-pista-eje {
+  min-height: 48px;
+  background: linear-gradient(90deg, #eef2ff, #e0e7ff);
+  border-bottom: 2px solid var(--v1);
+}
+
+.gantt-tick {
+  position: absolute;
+  top: 7px;
+  transform: translate(-50%, 0);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.gantt-barra {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.gantt-barra span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gantt-barra:hover {
+  transform: translateY(-50%) scaleY(1.15);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.35);
+  filter: brightness(1.1);
+  z-index: 3;
+}
+
+.gantt-planificada { background: linear-gradient(90deg, #94a3b8, #64748b); }
+.gantt-encurso { background: linear-gradient(90deg, #f59e0b, #f97316); }
+.gantt-finalizada { background: linear-gradient(90deg, #10b981, #06b6d4); }
+.gantt-cancelada {
+  background: linear-gradient(90deg, #f43f5e, #e11d48);
+  opacity: 0.8;
+}
+
+.gantt-barra-carril {
+  transform: none;
+}
+
+.gantt-barra-carril:hover {
+  transform: scaleY(1.12);
+}
+
+.gantt-superpuesta {
+  outline: 2px solid #f43f5e;
+  outline-offset: 1px;
+  box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.22), 0 4px 10px rgba(15, 23, 42, 0.25);
+}
+
+.gantt-hoy-etiqueta {
+  position: absolute;
+  top: auto;
+  bottom: 4px;
+  background: #f43f5e;
+  color: #fff;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.55);
+  z-index: 3;
+}
+
+.gantt-hoy {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #f43f5e;
+  box-shadow: 0 0 6px rgba(244, 63, 94, 0.8);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ---------- Modal de detalle ---------- */
+.modal-detalle {
+  border: none;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.4);
+}
+
+.modal-detalle .modal-header {
+  background: linear-gradient(90deg, var(--v1) 0%, var(--v2) 55%, var(--rosa) 100%);
+  color: #fff;
+  border: none;
+  padding: 16px 22px;
+}
+
+.modal-detalle .modal-title {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.modal-detalle .titulo-secundario {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.modal-detalle .modal-body {
+  padding: 22px;
+}
+
+.modal-detalle .modal-footer {
+  border-top: 1px solid var(--borde);
+  padding: 14px 22px;
+}
+
+.detalle-etiqueta {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--suave);
+  margin-bottom: 3px;
+}
+
+.detalle-valor {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--tinta);
+  overflow-wrap: break-word;
+}
+
+.detalle-valor a {
+  color: var(--v1);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.detalle-valor a:hover {
+  text-decoration: underline;
 }
 
 /* ---------- Estados de fila ---------- */
